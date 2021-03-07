@@ -52,11 +52,16 @@ int main()
   Vehicle ego = Vehicle(0, 0, 0, 0, 0, 0, 1, "KL");
 
   // Waypoint map to read from
-  string map_file_ = "../data/highway_map.csv";
+  string map_file_ = "data/highway_map.csv";
 
 
-  std::cout << "Current path is " << getCurrentPath() << '\n';
-  std::cout << "File exist " << is_file_exist(map_file_.c_str()) << '\n';
+  // std::cout << "Current path is " << getCurrentPath() << '\n';
+  // std::cout << "File exist " << is_file_exist(map_file_.c_str()) << '\n';
+
+  if(!is_file_exist(map_file_.c_str())){
+    cout << "Cannot find " << map_file_ << endl;
+    exit(1);
+  }
 
   std::ifstream in_map_(map_file_.c_str(), std::ifstream::in);
 
