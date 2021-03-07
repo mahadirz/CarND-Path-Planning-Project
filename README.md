@@ -1,7 +1,7 @@
 # CarND-Path-Planning-Project
 [![Udacity - Self-Driving Car NanoDegree](https://s3.amazonaws.com/udacity-sdc/github/shield-carnd.svg)](http://www.udacity.com/drive)
 
-[![](writeup-resources/sc.png)](https://www.youtube.com/watch?v=cCHbFd2o1gA)
+[![](writeup-resources/sc.png)](https://youtu.be/E_DrSCbe_X4)
 
 ## Writeup
 
@@ -46,7 +46,7 @@ Then the binary file can be executed as follows:
 
 ### Valid Trajectories
 
-This is the [recorded screen](https://www.youtube.com/watch?v=cCHbFd2o1gA) for the car that met the following criterias: 
+This is the [recorded screen](https://youtu.be/E_DrSCbe_X4) for the car that met the following criterias: 
 
 * The car is able to drive at least 4.32 miles without incident..
 * The car drives according to the speed limit.
@@ -54,6 +54,11 @@ This is the [recorded screen](https://www.youtube.com/watch?v=cCHbFd2o1gA) for t
 * Car does not have collisions.
 * The car stays in its lane, except for the time between changing lanes.
 * The car is able to change lanes
+
+### Suggestions to Make Your Project Stand Out!
+
+The path planner is able to optimize lane changing through the cost calculation of lane speed. It will only change the lane if it can optimize
+its speed towards the goal.
 
 ### Reflection
 
