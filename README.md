@@ -1,16 +1,13 @@
 # CarND-Path-Planning-Project
 [![Udacity - Self-Driving Car NanoDegree](https://s3.amazonaws.com/udacity-sdc/github/shield-carnd.svg)](http://www.udacity.com/drive)
 
-[![video](./writeup_resources/sc.png)](https://www.youtube.com/watch?v=cCHbFd2o1gA)
+[![](writeup-resources/sc.png)](https://www.youtube.com/watch?v=cCHbFd2o1gA)
 
 ## Writeup
 
 ---
 
 **Path Planning Project**
-
-[//]: # (Image References)
-[path_planning]: ./writeup_resources/path-planning.png "path_planning"
    
 ### Simulator.
 You can download the Term3 Simulator which contains the Path Planning Project from the [releases tab (https://github.com/udacity/self-driving-car-sim/releases/tag/T3_v1.2).  
@@ -44,8 +41,7 @@ cmake --build "build" --target all -- -j 14
 Then the binary file can be executed as follows:
 
 ```sh
-cd build
-./
+./build/path_planning
 ```
 
 ### Valid Trajectories
@@ -61,10 +57,29 @@ This is the [recorded screen](https://www.youtube.com/watch?v=cCHbFd2o1gA) for t
 
 ### Reflection
 
+The source code contains 4 main modules to maneuver the car namely prediction, behaviour, and trajectory and path generation. Some part of the codes were taken and extended from the Q&A video from the project page and behavioral planning quiz.
+
+![path-planning](writeup-resources/path-planning.png)
+
+#### Prediction
+
+The first module is to generate predictions of the other cars from sensor fusion for next likely location. The method used is by projecting the frenet S location from the velocity of the car.
+
+The code that does this can be found in `main.cpp` from line 150 to 165 that essentially iterate all the vehicles found in the sensor fusion data 
+and invoke the `Vehicle::generate_predictions(int horizon)`. 
+
+#### Behaviour Planning
+
+The second module is about planning the maneuveur which performs decision making such as lane changes to minimize the cost in achieving the goals. In the main, `vector<Vehicle> trajectory = ego.choose_next_state(predictions);` is the one that invoke the behavioral module. The `choose_next_state` functions will then choose the next actions from Finite State Machine (FSM) through the `vector<string> Vehicle::successor_states()` for the next states the car can move into based on its current state.
 
 
-![alt text][path_planning]
+#### Trajectory Planning
 
+The third module is the generating trajectory and choosing the best actions for the car to move with manageable acceleration and jerk. The first step of the planning is to generate the trajectory of the car through the  `vector<Vehicle> trajectory = generate_trajectory(*it, predictions);` for each and every states from the behavior. The cost of each trajectories generated are then computed from the impelementation inside the `cost.cpp`. 
+
+#### Path Generation
+
+The paths are calculated with the help of splines based on the output of lowest cost trajectory. The class that implement this is the `waypoint.cpp`.
 
 ### Technical Details
 
