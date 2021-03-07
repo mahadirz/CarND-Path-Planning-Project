@@ -231,6 +231,9 @@ vector<Vehicle> Vehicle::lane_change_trajectory(string state,
     Vehicle next_lane_vehicle;
     Vehicle nearest_vehicle;
     double nearest_s = 1e7;
+    if ( (this->s - last_lane_change_s) < 0){
+        this->last_lane_change_s = 0;
+    }
     if (((this->s - last_lane_change_s) < 100) || (this->s < 300))
     {
         // min x meter since last change lane
