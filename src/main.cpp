@@ -179,6 +179,7 @@ int main()
             cout << "[main.cpp] new last_lane_change_s:" << ego.last_lane_change_s << endl;
           }
           ego.lane = final.lane;
+          ego.last_intended_speed = (final.speed/1.0);
           XY waypoint_xy = waypoint.generate_waypoint(trajectory);
 
           vector<double> next_x_vals = waypoint_xy.x;

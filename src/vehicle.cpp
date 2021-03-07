@@ -179,6 +179,11 @@ vector<double> Vehicle::get_kinematics(map<int, vector<Vehicle>> &predictions,
         // slow down
         new_velocity = (this->last_intended_speed - (this->max_acceleration * 0.02));
 
+        if(new_velocity < vehicle_ahead.speed){
+            cout << "[vehicle.cpp] slow down capping to speed vehicle ahead:" <<  vehicle_ahead.speed << endl;
+            new_velocity = vehicle_ahead.speed;
+        }
+
         //double max_velocity_in_front = (vehicle_ahead.s - this->s - this->preferred_buffer) + vehicle_ahead.speed - 0.5 * (this->max_acceleration);
         cout << "[vehicle.cpp] Existing velocity:" << this->last_intended_speed << " New velocity:" << new_velocity << endl;
     }
@@ -190,17 +195,11 @@ vector<double> Vehicle::get_kinematics(map<int, vector<Vehicle>> &predictions,
             new_velocity = this->target_speed;
         }
 
-        if( is_vehicle_ahead && distance_to_car <= this->preferred_buffer && new_velocity > vehicle_ahead.speed){
-            // cap to the front vehicle velocity
-            new_velocity = vehicle_ahead.speed;
-        }
-
-        cout << "this->speed:" << this->last_intended_speed << " new_velocity:" << new_velocity << endl;
+        cout << "this->speed:" << this->speed << " this->last_intended_speed:" << this->last_intended_speed << " new_velocity:" << new_velocity << endl;
     }
 
     new_accel = (new_velocity - this->last_intended_speed)/0.02; // Equation: (v_1 - v_0)/t = acceleration
     new_position = this->s + new_velocity + new_accel / 2.0;
-    this->last_intended_speed = (new_velocity/1.0);
 
     return {new_position, new_velocity, new_accel};
 }
@@ -251,13 +250,14 @@ vector<Vehicle> Vehicle::lane_change_trajectory(string state,
                 // If lane change is not possible, return empty trajectory.
                 cout << "[vehicle.cpp] change to lane " << state << " imposible ";
                 cout << "new lane:" << new_lane << " found vehicle in this lane:" << next_lane_vehicle.lane;
-                cout << "next_lane_vehicle.s:" << next_lane_vehicle.s << " s:" << s << " distance:";
+                cout << " next_lane_vehicle.s:" << next_lane_vehicle.s << " s:" << s << " distance:";
                 cout << fabs(next_lane_vehicle.s - this->s) << endl;
                 return trajectory;
             }
             else
             {
-                if(next_lane_vehicle.s < nearest_s){
+                // changing lane is possible
+                if(next_lane_vehicle.s < nearest_s && next_lane_vehicle.s < this->s && fabs(next_lane_vehicle.s-this->s) > 50){
                     nearest_vehicle = next_lane_vehicle;
                 }
                 cout << "[vehicle.cpp] changing lane distance:" << fabs(next_lane_vehicle.s - this->s) << endl;
@@ -265,8 +265,9 @@ vector<Vehicle> Vehicle::lane_change_trajectory(string state,
         }
     }
     if( nearest_vehicle.speed - this->speed > 5){
+        cout << "[vehicle.cpp] nearest_vehicle.speed:" << nearest_vehicle.speed << " s:"  << nearest_vehicle.s << endl; 
         cout << "[vehicle.cpp] vehicle at the back approaching fast!" << endl;
-        return trajectory;
+        //return trajectory;
     }
     cout << "[vehicle.cpp] last_lane_change_s:" << last_lane_change_s << " changing lane OK " << endl;
     trajectory.push_back(Vehicle(this->x, this->y, this->s, this->d, this->yaw, this->speed, this->lane, this->state));
@@ -283,6 +284,7 @@ vector<Vehicle> Vehicle::lane_change_trajectory(string state,
     if (new_v > this->target_speed){
         new_v = this->target_speed;
     }
+
     cout << "[vehicle.cpp] s:" << this->s << " speed:" << this->speed << " new_speed:" << new_v << endl;
     trajectory.push_back(Vehicle(this->x, this->y, this->s, this->d, this->yaw, new_v, new_lane, state, this->a));
     return trajectory;
