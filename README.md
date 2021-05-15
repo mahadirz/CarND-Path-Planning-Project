@@ -66,6 +66,22 @@ The source code contains 4 main modules to maneuver the car namely prediction, b
 
 ![path-planning](writeup-resources/path-planning.png)
 
+#### Code Structures
+
+All the main file for this project is inside the `src` folder.
+
+* main.cpp
+* vehicle.h
+* vehicle.cpp
+* cost.h
+* cost.cpp
+* waypoint.h
+* waypoint.cpp
+* helpers.h
+* helpers.cpp
+* json.hpp
+* spline.h
+
 #### Prediction
 
 The first module is to generate predictions of the other cars from sensor fusion for next likely location. The method used is by projecting the frenet S location from the velocity of the car.
@@ -73,18 +89,100 @@ The first module is to generate predictions of the other cars from sensor fusion
 The code that does this can be found in `main.cpp` from line 150 to 165 that essentially iterate all the vehicles found in the sensor fusion data 
 and invoke the `Vehicle::generate_predictions(int horizon)`. 
 
+```cpp
+vector<Vehicle> predictions;
+for (int i = 0; i < horizon; ++i)
+{
+    // s + prev_size * v * t = s + prev_size(vt)
+    // let prev_size = 3 then s + vt + vt + vt
+    double next_s = position_at(0.02);
+    predictions.push_back(Vehicle(this->x, this->y, next_s, this->d, 0.0, this->speed, this->lane));
+}
+```
+
+For each of the vehicles found from the sensor fusion we iterate over horizon of previous size of each 20ms and project it's frenet location
+using the following equation:
+
+```
+new_s = s + velocity + 1/2(acceleration)(time)^2
+```
+
+However there is an assumption here which is acceleration is 0. In the future this part can be improved to keep track of the vehicle acceleration as well
+to be more accurate in the prediction.
+
 #### Behaviour Planning
 
-The second module is about planning the maneuveur which performs decision making such as lane changes to minimize the cost in achieving the goals. In the main, `vector<Vehicle> trajectory = ego.choose_next_state(predictions);` is the one that invoke the behavioral module. The `choose_next_state` functions will then choose the next actions from Finite State Machine (FSM) through the `vector<string> Vehicle::successor_states()` for the next states the car can move into based on its current state.
+The second module is about planning the maneuveur which performs decision making such as lane changes to minimize the cost in achieving the goals. 
+In the main, `vector<Vehicle> trajectory = ego.choose_next_state(predictions);` is the one that invoke the behavioral module. 
+The `choose_next_state` functions will then choose the next actions from 
+Finite State Machine (FSM) through the `vector<string> Vehicle::successor_states()` for the next states the car can 
+move into based on its current state.
 
+There are 2 possible states the car can move into:
 
-#### Trajectory Planning
+![fsm](writeup-resources/fsm.png)
 
-The third module is the generating trajectory and choosing the best actions for the car to move with manageable acceleration and jerk. The first step of the planning is to generate the trajectory of the car through the  `vector<Vehicle> trajectory = generate_trajectory(*it, predictions);` for each and every states from the behavior. The cost of each trajectories generated are then computed from the impelementation inside the `cost.cpp`. 
+```cpp
+vector<Vehicle> trajectory = generate_trajectory(*it, predictions);
+```
+
+For each of the possible states the `generate_trajectory` will generate the car trajectory specifically from these 
+two methods:
+
+```cpp
+vector<Vehicle> Vehicle::keep_lane_trajectory(map<int, vector<Vehicle>> &predictions)
+
+vector<Vehicle> Vehicle::lane_change_trajectory(string state,
+                                                map<int, vector<Vehicle>> &predictions)
+```
+
+The brief explanation for `keep_lane_trajectory`
+
+* Measure the distance between vehicle behind and ahead in the same lane.
+* If the vehicle in front is less than or equal to the preferred distance buffer, the car will slow down by adjusting the
+the velocity
+* If the new velocity is lower than the vehicle in front, it will copy its velocity. This is a mechanic to prevent
+complete or sudden halt to the car which is unsafe.
+* If no vehicle is found in-front or no within the distance buffer, the car will adjust its velocity to achieve the target_speed
+
+The brief explanation for `lane_change_trajectory`
+
+* The lane change only possible after first 300 meter and the difference between last lane change at least 100 meter.
+This is to ensure to car stabilise and to balance between safety and arriving destination fast.
+* It checks between prediction and trajectory for any vehicle within safe distance (collision). If there is potential collision
+then it returns an empty trajectory.
+* Adjust the speed to achieve the target_speed.
+
+For each of the trajectory above we will compute its efficiency cost through `calculate_cost` method provided by `cost.cpp` 
+
+```cpp
+float cost = (2.0 * vehicle.target_speed - proposed_speed_final ) / vehicle.target_speed;
+```
+
+The cost becomes higher for trajectories to the lane that have traffic slower than vehicle's target speed.
+
+The `keep_lane_trajectory` will finally return the trajectories with the lowest cost.
+
 
 #### Path Generation
 
-The paths are calculated with the help of splines based on the output of lowest cost trajectory. The class that implement this is the `waypoint.cpp`.
+The trajectory provided by `keep_lane_trajectory` only consisted of 2 points, the origin and destination.
+We need to generate the waypoints between the two points for smooth navigation.
+
+The paths are calculated with the help of splines library based on the vector returned from previous step . 
+The class that implement this is the `waypoint.cpp`.
+
+```cpp
+Waypoint waypoint = Waypoint(previous_path_x, previous_path_y, map_waypoints_s, map_waypoints_x, map_waypoints_y);
+...
+...
+Vehicle final = trajectory[1];
+XY waypoint_xy = waypoint.generate_waypoint(trajectory);
+vector<double> next_x_vals = waypoint_xy.x;
+vector<double> next_y_vals = waypoint_xy.y;
+```
+
+The implementation of the spline library here is taken and modified from the walkthrough video provided in the lesson.
 
 ### Technical Details
 
